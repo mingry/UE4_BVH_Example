@@ -308,19 +308,23 @@ UE4Poser::Retarget(const ml::Posture & in, bool limb_ik, bool head_ik)
 	}
 
 	posture_.SetGlobalTrans(in.GetGlobalTranslation(ml::PELVIS) / scale);
-
 	for ( unsigned int i=0; i<in.num_joint(); i++ )
 	{
 		ml::JointTag j_tag = in.body()->joint_tag(i);
 
 		if ( j_tag != ml::UNKNOWN && skeleton_.HasTag( j_tag ) )
 		{
-			posture_.rotate( skeleton_.joint_index(j_tag), in.rotate(i));
+			
+			posture_.SetGlobalRotation(j_tag, in.GetGlobalRoation(j_tag));
 		}
 	}
-	
 
-	if ( head_ik ) {
+
+	if ( head_ik 
+		&& posture_.body()->HasTag(ml::HEAD) 
+		&& posture_.body()->HasTag(ml::CHEST) 
+		&& posture_.body()->HasTag(ml::SPINE) 
+		) {
 
 		posture_.IkLimb(ml::HEAD, ml::CHEST, ml::SPINE, in.GetGlobalTranslation(ml::HEAD)/scale);
 		posture_.SetGlobalRotation(ml::HEAD, in.GetGlobalRoation(ml::HEAD));
@@ -363,6 +367,8 @@ UE4Poser::UpdateCharacterPose()
 	// https://wiki.unrealengine.com/Draw_3D_Debug_Points,_Lines,_and_Spheres:_Visualize_Your_Algorithm_in_Action
 	FTransform component_m = u_poseable_->GetComponentTransform();
 
+	// For Debug
+	if ( false )
 	for (unsigned int j = 0; j < skeleton_.num_joint(); j++)
 	{
 		DrawDebugPoint(u_poseable_->GetWorld(),

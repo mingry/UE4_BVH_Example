@@ -241,8 +241,15 @@ namespace ml
 
 	void Posture::SetGlobalRotation(int i, const cml::matrix3& rot)
 	{
-		matrix3 parent_gloal = GetGlobalRoation(m_body->parent(i));
-		m_rotates[i] = transpose(parent_gloal) * rot;
+		if ( i>0 )
+		{
+			matrix3 parent_gloal = GetGlobalRoation(m_body->parent(i));
+			m_rotates[i] = transpose(parent_gloal) * rot;
+		}
+		else
+		{
+			m_rotates[i] = rot;
+		}
 	}
 
 	void Posture::SetGlobalRotation(JointTag t, const cml::matrix3& rot)

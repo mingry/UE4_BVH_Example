@@ -20,9 +20,9 @@ namespace ml {
 	{
 	public:
 		/**
-		@param root_offset If root_offset is false, then it doesn't load the offset value of the root node in the hierarchy section, and
-		set the offset to (0, 0, 0). In most BVH files, the root translation data in the motion section are global potisions, 
-		so the root offset value in the hierarcy section must be ignored when evaluating a global position.
+		@param root_offset If root_offset is false, then it will not load the offset value of the root node in the hierarchy section
+		and	set the offset to (0, 0, 0). In most BVH files, the root translation data in the motion section are global potisions, 
+		so the root offset value in the hierarcy section must be ignored when evaluating global positions.
 		*/
 		void LoadBVH(const char *file, Motion *motion, bool root_offset=false, bool human_load=true, double scale=1.0, int sample = 1);
 		void LoadBVH_UE4(const char *file, Motion *motion, bool root_offset=false, bool human_load=true, double scale=1.0, int sample = 1);
@@ -40,9 +40,10 @@ namespace ml {
 
 	};
 
-	bool LoadBVH(const char *file, Motion *out_motion, bool root_offset=false, bool human_load=true, double scale=1.0, int sample=1);
-	bool LoadBVH_UE4(const char *file, Motion *out_motion, bool root_offset=false, bool human_load=true, double scale=1.0, int sample=1);
-	bool LoadBVH_UE4(FString file, Motion *out_motion, bool root_offset=false, bool human_load=true, double scale=1.0, int sample=1);
+	bool LoadBVH(const char *file, Motion &out_motion, bool root_offset=false, bool human_load=true, double scale=1.0, int sample=1);
+	bool LoadBVH_UE4(const char *file, Motion &out_motion, bool root_offset=false, bool human_load=true, double scale=1.0, int sample=1);
+	//bool LoadBVH_UE4(FString file, Motion &out_motion, bool root_offset=false, bool human_load=true, double scale=1.0, int sample=1);
+	bool LoadBVH_UE4(FString T_motion_file, FString file, Motion &out_motion, bool root_offset=false, bool human_load=true, double scale=1.0, int sample=1);
 
 
 	class AMCReader

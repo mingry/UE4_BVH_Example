@@ -251,10 +251,9 @@ void ml::Body::SetPredefinedTagMap(std::string map_name)
 
 void ml::Body::SetJointTag(std::string j_name, JointTag t)
 {
-	auto i = m_jointMap.find(j_name);
-	if ( i != m_jointMap.end() )
+	if ( m_jointMap.count(j_name) > 0 )
 	{
-		m_joint_tag_map[t] = i->second;
+		m_joint_tag_map[t] = m_jointMap[j_name];
 	}
 }
 

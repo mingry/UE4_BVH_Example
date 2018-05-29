@@ -53,28 +53,72 @@ namespace ml
 		return new_index;
 	}
 
-	bool LoadBVH(const char *file, Motion *out_motion, bool root_offset, bool human_load, double scale, int sample)
+	bool LoadBVH(const char *file, Motion &out_motion, bool root_offset, bool human_load, double scale, int sample)
 	{
 		BVHReader r;
-		r.LoadBVH(file, out_motion, root_offset, human_load, scale, sample);
+		r.LoadBVH(file, &out_motion, root_offset, human_load, scale, sample);
 
 		return true;
 	}
 
 
 
-	bool LoadBVH_UE4(const char *file, Motion *out_motion, bool root_offset, bool human_load, double scale, int sample)
+	bool LoadBVH_UE4(const char *file, Motion &out_motion, bool root_offset, bool human_load, double scale, int sample)
 	{
 		BVHReader r;
-		r.LoadBVH_UE4(file, out_motion, root_offset, human_load, scale, sample);
+		r.LoadBVH_UE4(file, &out_motion, root_offset, human_load, scale, sample);
 
 		return true;
 	}
 
-	bool LoadBVH_UE4(FString file, Motion *out_motion, bool root_offset, bool human_load, double scale, int sample)
+	bool LoadBVH_UE4(FString T_motion_file, FString file, Motion &out_motion, bool root_offset, bool human_load, double scale, int sample)
 	{
-		return LoadBVH_UE4(TCHAR_TO_ANSI(*file), out_motion, root_offset);
+		bool succeed = true;
 
+		ml::Motion t_motion;
+		
+
+		succeed = LoadBVH_UE4(TCHAR_TO_ANSI(*T_motion_file), t_motion, root_offset);
+		if ( !succeed ) return false;
+
+		const ml::Posture &t_pose = t_motion.posture(0);
+
+		
+
+		succeed = LoadBVH_UE4(TCHAR_TO_ANSI(*file), out_motion, root_offset);
+		if ( !succeed ) return false;
+
+		int joint_num = out_motion.body()->num_joint();
+
+		for ( int j=0; j<joint_num; j++ )
+		{
+			//if ( j==0 )
+			//{
+			//	out_motion.editable_body()->joint(j).offset = cml::vector3d(0, 0, 0);//t_pose.GetGlobalTranslation(0);
+			//}
+			//else
+			{
+				//int p_j = t_pose.body()->parent(j);
+				out_motion.editable_body()->joint(j).offset = t_pose.rotate(j) * out_motion.editable_body()->joint(j).offset;
+			}
+		}
+
+
+		ml::Motion src_motion;
+		succeed = LoadBVH_UE4(TCHAR_TO_ANSI(*file), src_motion, root_offset);
+		if ( !succeed ) return false;
+
+
+		for ( int f=0; f<out_motion.size(); f++ )
+		{
+			for ( int j=0; j<joint_num; j++ )
+			{
+				out_motion.posture(f).SetGlobalRotation(j, src_motion.posture(f).GetGlobalRoation(j)*cml::inverse(t_pose.GetGlobalRoation(j)));
+				//out_motion.posture(f).rotate(j, out_motion.posture(f).GetGlobalRoation(j));
+			}
+		}
+
+		return succeed;
 	}
 
 

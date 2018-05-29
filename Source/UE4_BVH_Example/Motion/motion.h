@@ -90,6 +90,7 @@ public:
 	// Edit
 	void AddPosture(const Posture& p);
 	void Stitch(const Motion & const_add_m, bool forward = true);
+	void Stitch_UE4(const Motion & const_add_m, bool forward = true);
 	void SwapBody(Body *toBody);
 	void Sample(double rate);
 

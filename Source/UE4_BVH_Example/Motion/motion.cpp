@@ -251,6 +251,76 @@ namespace ml
 		}
 	}
 
+	static cml::matrix3 PlaneXYProject_mat3( const cml::matrix3& mat )
+	{
+		cml::vector3 rot_vec = cml::log_mat3(mat);
+		double theta2 = rot_vec.length() / 2;
+		if(std::abs(theta2) < 1e-6) return cml::rotz_mat(0.0);
+
+		rot_vec = rot_vec.normalize();
+		double theta = cml::pi()-2*std::atan2(std::cos(theta2),std::sin(theta2)*rot_vec[2]);
+
+		return cml::rotz_mat(theta);
+	}
+
+	void Motion::Stitch_UE4(const Motion & const_add_m, bool forward)
+	{
+		Motion add_m = const_add_m;
+
+		//// replace body. 
+		// we assume that all the body info of 'add_m' are exactly same to the one of this,
+		// so we can replace it. Finally, the entire postures of the stitched motion
+		// will have the same pointer of the same body instance.
+		add_m.body(this->editable_body());
+		for ( auto &p : add_m.m_postures )
+		{
+			p.body(this->editable_body());
+		}
+		
+		Posture ori_p, add_p;
+		if (forward == true) {
+			ori_p = last_posture();
+			add_p = add_m.first_posture();
+		}
+		else {
+			ori_p = first_posture();
+			add_p = add_m.last_posture();
+		}
+
+		cml::matrix3 diff_rot = PlaneXYProject_mat3(ori_p.rotate(0) * cml::inverse(add_p.rotate(0)));
+		double diff_time = ori_p.time - add_p.time;
+
+		for (int i = 0; i < (int)add_m.size(); ++i) {
+			Posture &p = add_m.posture(i);
+			double height = p.trans()[2];
+			cml::vector3d diff_v = p.trans() - add_p.trans();
+			cml::vector3d new_pos = ori_p.trans() + diff_rot * diff_v;
+			new_pos[2] = height;
+
+			p.trans(new_pos);
+			p.rotate(0, diff_rot * p.rotate(0));
+			p.time = p.time + diff_time;
+		}
+		//warp
+		Motion *before_m, *after_m;
+		if (forward == true) {
+			before_m = this;
+			after_m = &add_m;
+		}
+		else {
+			before_m = &add_m;
+			after_m = this;
+		}
+		warp(before_m, after_m);
+
+		if (forward == true) {
+			this->m_postures.insert(m_postures.end(), add_m.m_postures.begin() + 1, add_m.m_postures.end());
+		}
+		else {
+			this->m_postures.insert(m_postures.begin(), add_m.m_postures.begin(), add_m.m_postures.end() - 1);
+		}
+	}
+
 	void Motion::transform_between_posture(ml::Posture to_posture, Posture from_posture) {
 		double diff_time = to_posture.time - from_posture.time;
 		cml::matrix3 diff_rot = cml::PlaneProject_mat3(to_posture.rotate(0) * cml::inverse(from_posture.rotate(0)));

@@ -1,12 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "MyActor.h"
+#include "MyActor2.h"
 #include "Misc/Paths.h"				// FPaths::ProjectContentDir() 사용을 위해...
 #include "EngineUtils.h"			// Debug 출력을 위해...
 
-
 // Sets default values
-AMyActor::AMyActor()
+AMyActor2::AMyActor2()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -14,7 +13,7 @@ AMyActor::AMyActor()
 }
 
 // Called when the game starts or when spawned
-void AMyActor::BeginPlay()
+void AMyActor2::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -33,21 +32,67 @@ void AMyActor::BeginPlay()
 
 
 	//////////////////////////////////////////////////////////////////////////////////////////
-	//// 2. 모션 캡쳐 데이터 로드
+	//// 2. 원본 모션 캡쳐 데이터 로드
 	//// 2.1 모션 데이터 파일의 위치(폴더)와 이름 지정
 	// FPaths::ProjectContentDir() 는 UE4 프로젝트 폴터의 Content 폴더 위치를 리턴한다.
 	FString T_pose_filename = FPaths::ProjectContentDir() + "bvh/bsh_T.bvh";	// T-Pose 자세를 저장하고있는 모션 데이터 파일
-	FString motion_filename = FPaths::ProjectContentDir() + "bvh/bsh_dance.bvh"; // 로드해야할 모션 데이터 파일
+	FString run_motion_filename = FPaths::ProjectContentDir() + "bvh/ljh_Run001.bvh"; // 로드해야할 모션 데이터 파일
+	FString wing_motion_filename = FPaths::ProjectContentDir() + "bvh/kyc_wing.bvh"; // 로드해야할 모션 데이터 파일
 
-
-	//// 2.2 'motion_filename' 로드
-	// 모션 데이터 파일을 로드하고 그 내용을 'motion_' 객체에 담는다.
-	// 반드시 T-Pose 자세를 포함하고 있는 데이터 파일을 첫번째 파라메터로 넣어야한다.
+	//// 2.2 run_motion 객체에 ljh_Run001.bvh을 로드한다.
+	// 반드시 T-Pose 자세를 포함하고 있는 데이터 파일을 첫 번째 파라메터로 넣어야한다.
 	// ML libaray에서는 T-Pose를 기준으로 상대적인 인체 자세의 변화를 분석하고 향후 모든 계산에 사용한다.
-	ml::LoadBVH_UE4(T_pose_filename, motion_filename, motion_);
+	ml::Motion run_motion;
+	ml::LoadBVH_UE4(T_pose_filename, run_motion_filename, run_motion);
+
+	//// 2.3 wing_motion 객체에 ljh_Run001.bvh을 로드한다.
+	// 반드시 T-Pose 자세를 포함하고 있는 데이터 파일을 첫 번째 파라메터로 넣어야한다.
+	// ML libaray에서는 T-Pose를 기준으로 상대적인 인체 자세의 변화를 분석하고 향후 모든 계산에 사용한다.
+	ml::Motion wing_motion;
+	ml::LoadBVH_UE4(T_pose_filename, wing_motion_filename, wing_motion);
 
 
-	//// 2.3 모션 데이터 각 인체 부위 이름 지정
+
+
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////
+	//// 3. 모션 캡쳐 데이터 편집
+	//// 3.1 달리기 부분 잘라내기.
+	// 'run_motion'의 전체 내용 중 30번 프레임부터 20개를 잘라서 'run_onecylce_motion' 객체로 복사해 넣는다.
+	ml::Motion run_onecylce_motion;
+	run_motion.CropMotion(30, 20, &run_onecylce_motion);
+
+	//// 3.2 달리다 서는 부분 잘라내기
+	// 'run_motion'의 전체 내용 중 270번 프레임부터 60개를 잘라서 'stop_motion' 객체로 복사해 넣는다.
+	ml::Motion stop_motion;
+	run_motion.CropMotion(270, 60, &stop_motion);
+
+	//// 3.3 날개짓 춤추기 잘라내기
+	// 'wing_motion'의 전체 내용 중 66번 프레임부터 100개를 잘라서 'wing_motion_01' 객체로 복사해 넣는다.
+	ml::Motion wing_motion_01;
+	wing_motion.CropMotion(66, 100, &wing_motion_01);
+
+	//// 3.4 이어 붙이기.
+	// 잘라낸 모션 조각들 'motion_' 객체에 담으며 이어붙인다.
+	// 새로운 하나의 모션 데이터를 만든다.
+	motion_ = run_onecylce_motion;				// 첫 부분 복사 (달리기)
+	motion_.Stitch_UE4(run_onecylce_motion);	// 다음 부분 이어붙이기 (달리기 반복)
+	motion_.Stitch_UE4(run_onecylce_motion);	// 다음 부분 이어붙이기 (달리기 반복)
+	motion_.Stitch_UE4(run_onecylce_motion);	// 다음 부분 이어붙이기 (달리기 반복)
+	motion_.Stitch_UE4(stop_motion);			// 다음 부분 이어붙이기 (서기)
+	motion_.Stitch_UE4(wing_motion_01);			// 다음 부분 이어붙이기 (날개 짓)
+	motion_.Stitch_UE4(wing_motion_01);			// 다음 부분 이어붙이기 (날개 짓)
+	motion_.Stitch_UE4(wing_motion_01);			// 다음 부분 이어붙이기 (날개 짓)
+
+	
+
+
+
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////
+	//// 4. 완성된 모션 데이터 각 인체 부위 이름 지정
 	// 각각의 모션 캡쳐 데이터는 파일마다 인체 부위에 대한 이름이 서로 다르게 기록되어있을 것이다.
 	// ML library를 사용하기 위해서는 각 인체 부위에 사전에 약속된 이름(JointTag)을 부여하여야 한다.
 	// SetJointTag("모션 캡쳐 데이터 상의 이름", "ML library에 정의 된 이름").
@@ -83,10 +128,10 @@ void AMyActor::BeginPlay()
 
 }
 
-bool AMyActor::InitPoseableCharacter()
+bool AMyActor2::InitPoseableCharacter()
 {
 	//////////////////////////////////////////////////////////////////////////////////////////
-	//// 1. 'james_posable_' 설정
+	//// 1. 'tom_poseable_' 설정
 	//// 1.1 현재 Actor가 소유하고 있는 모든 UPoseableMeshComponent 객체의 포인터를 받아서,
 	////     'components' 배열에 담는다. 
 	TArray<UPoseableMeshComponent*> components;
@@ -94,31 +139,31 @@ bool AMyActor::InitPoseableCharacter()
 
 	//// 1.2 components 배열을 검사하여 이름이 "JamePoseable" 인 것을 찾고,
 	////     그 포인터를 맴버 변수 'jame_poseable_' 에 저정한다.
-	james_poseable_ = nullptr;
+	tom_poseable_ = nullptr;
 	for (int i = 0; i<components.Num(); i++)
 	{
-		if (components[i]->GetName() == "JamesPoseable")
+		if (components[i]->GetName() == "TomPoseable")
 		{
-			james_poseable_ = (UPoseableMeshComponent*)components[i];
-			// UE_LOG(LogTemp, Warning, TEXT("james_poseable_ = %s"), *(james_poseable_->GetName())); // 디버그 용 출력
+			tom_poseable_ = (UPoseableMeshComponent*)components[i];
+			// UE_LOG(LogTemp, Warning, TEXT("tom_poseable_ = %s"), *(tom_poseable_->GetName())); // 디버그 용 출력
 		}
 	}
 
 
 
-	// "JamesPoseable" 찾기에 실패한 경우 return false.
-	if (james_poseable_ == nullptr) return false;	
+	// "TomPoseable" 찾기에 실패한 경우 return false.
+	if (tom_poseable_ == nullptr) return false;	
 
-	// "JamesPoseable" 이 적절한 메시 모델을 소유하고 있지 안은 경우 return false.
-	if (james_poseable_->SkeletalMesh == nullptr) return false;	
+	// "TomPoseable" 이 적절한 메시 모델을 소유하고 있지 안은 경우 return false.
+	if (tom_poseable_->SkeletalMesh == nullptr) return false;	
 
 
 
 
 	//////////////////////////////////////////////////////////////////////////////////////////
 	//// 2. 'ml_u_poser_' 설정
-	//// 2.1 'james_poseable_' 포인터 값을 입력한다.
-	ml_u_poser_.SetUPoseableMeshComponent(james_poseable_);
+	//// 2.1 'tom_poseable_' 포인터 값을 입력한다.
+	ml_u_poser_.SetUPoseableMeshComponent(tom_poseable_);
 
 	//// 2.2 캐릭터 모델 인체 부위 이름 지정
 	// 각각의 캐릭터 모델의 신체 부위 이름은 제작자가 임의로 부여하기 때문에 서로 다를 것이다.
@@ -140,7 +185,7 @@ bool AMyActor::InitPoseableCharacter()
 	ml_u_poser_.SetJointTag("calf_l", ml::L_KNEE);
 	ml_u_poser_.SetJointTag("foot_l", ml::L_ANKLE);
 	ml_u_poser_.SetJointTag("ball_l", ml::L_FOOT);
-	
+
 
 	ml_u_poser_.SetJointTag("clavicle_r", ml::R_CLAVICLE);
 	ml_u_poser_.SetJointTag("upperarm_r", ml::R_SHOULDER);
@@ -156,19 +201,19 @@ bool AMyActor::InitPoseableCharacter()
 	//// 2.3 위에 설정된 내용을 바탕으로 'ml_u_poser' 내부 데이터를 업데이트한다.
 	// 'BuildSkeleton()' 함수는 반드시 2.1과 2.2의 설정이 끝난후 실행되어야한다.
 	ml_u_poser_.BuildSkeleton();
-	
+
 
 	return true;
 
 }
 
 // Called every frame
-void AMyActor::Tick(float DeltaTime)
+void AMyActor2::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 	// "JamesPoseable"이 현재 nullptr 라면 여기서 종료.
-	if (james_poseable_ == nullptr) return;
+	if (tom_poseable_ == nullptr) return;
 
 	// InitPoseableCharacter() 함수 처리가 실패되었다면 여기서 종료.
 	if (flag_valid_poseable_char_ == false) return;

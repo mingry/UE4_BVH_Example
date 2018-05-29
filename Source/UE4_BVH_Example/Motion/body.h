@@ -84,6 +84,7 @@ namespace ml{
 		bool HasTag(JointTag tag) const;
 
 		const Joint& joint(int j) const { return m_joints[j]; }
+		      Joint& joint(int j) { return m_joints[j]; }
 		const Joint& joint(JointTag j_tag) const { return m_joints[ m_joint_tag_map.find(j_tag)->second ]; }
 		      Joint& joint(JointTag j_tag) { return m_joints[ m_joint_tag_map.find(j_tag)->second ]; }
 
