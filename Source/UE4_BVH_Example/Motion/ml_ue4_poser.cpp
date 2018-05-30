@@ -314,8 +314,7 @@ UE4Poser::Retarget(const ml::Posture & in, bool limb_ik, bool head_ik)
 
 		if ( j_tag != ml::UNKNOWN && skeleton_.HasTag( j_tag ) )
 		{
-			
-			posture_.SetGlobalRotation(j_tag, in.GetGlobalRoation(j_tag));
+			posture_.rotate(j_tag, in.rotate(j_tag));
 		}
 	}
 

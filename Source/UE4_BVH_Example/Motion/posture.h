@@ -33,6 +33,7 @@ public:
   void body(const Body* body);	
   void trans(const cml::vector3& trans) { m_trans = trans; }
   void rotate(int i, const cml::matrix3 &rot) { m_rotates[i] = rot; }
+  void rotate(JointTag j_tag, const cml::matrix3 &rot) { m_rotates[m_body->joint_index(j_tag)] = rot; }
 	
   size_t num_joint() const { return m_rotates.size(); }
 
