@@ -75,9 +75,9 @@ namespace ml
 		reader.LoadAMC(amc_file, asf_file, this, human_load, scale);
 	}
 
-	void Motion::LoadBVH(const char *file, bool human_load, double scale, int sample) {
+	void Motion::LoadBVH(const char *file, bool root_offset, bool human_load, double scale, int sample) {
 		BVHReader reader;
-		reader.LoadBVH(file, this, human_load, scale, sample);
+		reader.LoadBVH(file, this, root_offset, human_load, scale, sample);
 	}
 
 	void Motion::LoadAMC_with_contactInfo(const char *amc_file, const char *asf_file, bool human_load /*= true*/, double scale /*= 1.0*/, double ground_truth /*= 0.0*/) {

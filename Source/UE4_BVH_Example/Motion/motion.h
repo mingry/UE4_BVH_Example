@@ -107,7 +107,7 @@ public:
 	// I/O
 	void LoadAMC(const char *amc_file, const char *asf_file, bool human_load = true, double scale = 1.0);
 	void LoadAMC_with_contactInfo(const char *amc_file, const char *asf_file, bool human_load = true, double scale = 1.0, double ground_truth = 0.0);
-	void LoadBVH(const char *file, bool human_load = true, double scale = 1.0, int sample = 1);
+	void LoadBVH(const char *file, bool root_offset, bool human_load = true, double scale = 1.0, int sample = 1);
 
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
